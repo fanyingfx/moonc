@@ -1,0 +1,13 @@
+{
+  "is-main": true,
+  "import": [
+    "moonc/lexer",
+    "moonc/parser",
+    "moonc/asm",
+    "moonc/emit",
+    "moonc/codegen",
+    "moonbitlang/x/sys",
+    "moonbitlang/x/fs",
+    "moonc/utils"
+  ]
+}
