@@ -1,22 +1,22 @@
 ///|
-struct Program {
+pub(all) struct Program {
   prog : Function
-}
+} derive(Show)
 
 ///|
-struct Function {
-  identifier : String
+pub(all) struct Function {
+  name : String
   instructions : Array[Instruction]
-}
+} derive(Show)
 
 ///|
-enum Instruction {
+pub(all) enum Instruction {
   Mov(dst~ : Operand, src~ : Operand)
   Ret
-}
+} derive(Show)
 
 ///|
-enum Operand {
+pub(all) enum Operand {
   Imm(Int)
   Register
-}
+} derive(Show)

@@ -1,22 +1,22 @@
 ///|
-enum Expr {
+pub enum Expr {
   Constant(Int)
   Var(String)
 } derive(Show)
 
 ///|
-enum Stmt {
+pub enum Stmt {
   Return(Expr)
   If(cond~ : Expr, thenStmt~ : Stmt, elseStmt~ : Stmt?)
 } derive(Show)
 
 ///|
-struct Function {
+pub struct Function {
   name : String
   body : Stmt
 } derive(Show)
 
 ///|
-struct Program {
+pub struct Program {
   prog : Function
 } derive(Show)

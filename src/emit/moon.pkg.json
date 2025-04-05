@@ -1,0 +1,7 @@
+{
+  "import": [
+    "moonc/utils",
+    "moonc/asm",
+    "moonbitlang/x/fs"
+  ]
+}
