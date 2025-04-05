@@ -21,10 +21,6 @@ fn asm_file(self : CFile) -> String {
 
 ///|
 fn main {
-  // let return_2 =
-  //   #| int main(void){
-  //   #|   return 2;
-  //   #|}
   let cfile = get_cfile()
   let content = @fs.read_file_to_string?(cfile._).unwrap()
   let tokens = @lexer.lex(content)
