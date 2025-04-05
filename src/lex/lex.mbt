@@ -1,5 +1,4 @@
-///|
-
+typealias @token.(Token)
 ///|
 struct Lexer {
   len : Int
@@ -56,9 +55,12 @@ fn eat_while(self : Lexer, predicate : (Char?) -> Bool) -> String {
 
 ///|
 fn skip_whitespace(self : Lexer) -> Unit {
+  // println("current char:\{self.ch}")
   while self.ch is Some(' ' | '\n' | '\r' | '\t') {
+    // println("Space")
     self.advance_char()
   }
+  // self.advance_char()
 }
 
 ///|
@@ -120,7 +122,7 @@ fn next_token(self : Lexer) -> Token {
         '?' => QuestionMark
         ':' => Colon
         ',' => Comma
-        _ => crash("Cannot get next_token")
+        _ => @utils.die("Cannot get next_token")
       }
     None => EOF
   }
@@ -129,9 +131,9 @@ fn next_token(self : Lexer) -> Token {
 }
 
 ///|
-pub fn lex(content : String) -> Array[Token] {
+pub fn lex(content : String) -> @queue.T[Token] {
   let lexer = Lexer::new(content)
-  let tokens : Array[Token] = []
+  let tokens  = @queue.new()
   while true {
     match lexer.next_token() {
       EOF => break
