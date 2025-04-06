@@ -10,10 +10,21 @@ let asm_start =
   #|  syscall
 
 ///|
+fn show_unop(unop : @asm.UnaryOp) -> String {
+  match unop {
+    Neg => "neg"
+    Not => "not"
+  }
+}
+
+///|
 fn show_operand(operand : @asm.Operand) -> String {
   match operand {
     Imm(i) => i.to_string()
-    Register => "eax"
+    Reg(AX) => "eax"
+    Reg(R10) => "r10d"
+    Stack(i) => "dword [rbp \{i}]" // TODO 如何判断是否是dword
+    _ => @utils.die("unsupport operand")
   }
 }
 
@@ -25,12 +36,14 @@ fn emit_instruction(inst : @asm.Instruction) -> String {
       #|  mov  rsp,rbp
       #|  pop  rbp
       #|  ret
+    Unary(op, operand) => "\{show_unop(op)} \{show_operand(operand)}"
+    AllocateStack(i) => "sub rsp,\{i}"
   }
   return inst_str + "\n"
 }
 
 ///|
-fn emit_tl(func : @asm.Function) -> String {
+fn emit_toplevel(func : @asm.Function) -> String {
   let label = func.name
   let instructions = func.instructions.map(emit_instruction)
   $|\{label}:
@@ -41,6 +54,6 @@ fn emit_tl(func : @asm.Function) -> String {
 
 ///|
 pub fn emit(filename : String, func_def : @asm.Program) -> Unit {
-  let content = asm_start + "\n" + emit_tl(func_def.prog)
+  let content = asm_start + "\n" + emit_toplevel(func_def.func)
   @fs.write_string_to_file?(filename, content).unwrap()
 }

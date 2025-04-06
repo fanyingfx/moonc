@@ -1,11 +1,17 @@
 ///|
-pub enum Expr {
+pub(all) enum Expr {
   Constant(Int)
+  Unary(UnaryOp,Expr)
   Var(String)
 } derive(Show)
 
+pub(all) enum UnaryOp{
+  Complement
+  Negate
+}derive(Show)
+
 ///|
-pub enum Stmt {
+pub(all) enum Stmt {
   Return(Expr)
   If(cond~ : Expr, thenStmt~ : Stmt, elseStmt~ : Stmt?)
 } derive(Show)
@@ -18,5 +24,5 @@ pub struct Function {
 
 ///|
 pub struct Program {
-  prog : Function
+  func : Function
 } derive(Show)

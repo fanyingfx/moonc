@@ -5,4 +5,5 @@ moon run src/main -- $cfile
 
 asmfile="${cfile%.c}.asm"
 
+
 fasm $asmfile

@@ -1,5 +1,5 @@
 ///|
-typealias @token.Token
+typealias @lexer.Token
 
 ///|
 pub type TokenStream @queue.T[Token] derive(Show)
@@ -47,13 +47,33 @@ fn parse_statement(self : TokenStream) -> Stmt {
 }
 
 ///|
+fn parse_unaryop(self : TokenStream) -> UnaryOp {
+  match self.take_token() {
+    Hyphen => Negate
+    Tilde => Complement
+    _ => panic()
+  }
+}
+
+///|
 fn parse_exp(self : TokenStream) -> Expr {
   match self.peek_token() {
     Constant(i) => {
       let _ = self.take_token()
       Expr::Constant(i)
     }
-    _ => @utils.die("Error token type")
+    Tilde | Hyphen => {
+      let op = self.parse_unaryop()
+      let inner_expr = self.parse_exp()
+      Unary(op, inner_expr)
+    }
+    LParen => {
+      let _ = self.take_token()
+      let inner_expr = self.parse_exp()
+      self.expect(RParen)
+      inner_expr
+    }
+    _ => @utils.die("Malformed expression")
   }
 }
 
@@ -71,5 +91,5 @@ pub fn parse(tokens : @queue.T[Token]) -> Program {
   let token_stream : TokenStream = tokens
   let func = token_stream.parse_function()
   token_stream.expect(EOF)
-  { prog: func }
+  { func: func }
 }

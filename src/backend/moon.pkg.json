@@ -1,6 +1,7 @@
 {
   "import": [
-    "moonc/lexer",
+    "moonc/asm",
+    "moonc/tacky",
     "moonc/utils"
   ]
 }
