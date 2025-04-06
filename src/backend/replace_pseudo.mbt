@@ -13,12 +13,12 @@ fn replace_operand(self : State, operand : Operand) -> Operand {
   match operand {
     Pseudo(s) =>
       match self.offset_map[s] {
-        Some(offset) => Stack(offset)
+        Some(offset) => Stack(offset, DWord)
         None => {
           let new_offset = self.current_offset - 4
           self.current_offset = new_offset
           self.offset_map.set(s, new_offset)
-          Stack(new_offset)
+          Stack(new_offset, DWord)
         }
       }
     operand => operand
@@ -31,7 +31,7 @@ fn replace_pseudos_in_instruction(
   instruction : @asm.Instruction
 ) -> @asm.Instruction {
   match instruction {
-    Mov(dst~,src~) => {
+    Mov(dst~, src~) => {
       let new_src = self.replace_operand(src)
       let new_dst = self.replace_operand(dst)
       Mov(dst=new_dst, src=new_src)
@@ -60,5 +60,4 @@ fn replace_pseudos_in_function(func : @asm.Function) -> (@asm.Function, Int) {
 pub fn replace_pseudos(program : @asm.Program) -> (@asm.Program, Int) {
   let (func, last_stack_slot) = replace_pseudos_in_function(program.func)
   ({ func, }, last_stack_slot)
-
 }

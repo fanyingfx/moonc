@@ -28,7 +28,12 @@ pub(all) enum Operand {
   Imm(Int)
   Reg(Register)
   Pseudo(String)
-  Stack(Int)
+  Stack(Int, OperandSize)
+} derive(Show)
+
+///|
+pub(all) enum OperandSize {
+  DWord
 } derive(Show)
 
 ///|

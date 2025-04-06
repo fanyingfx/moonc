@@ -8,6 +8,7 @@ let asm_start =
   #|  mov rdi,rax
   #|  mov rax,60
   #|  syscall
+  #|
 
 ///|
 fn show_unop(unop : @asm.UnaryOp) -> String {
@@ -23,7 +24,7 @@ fn show_operand(operand : @asm.Operand) -> String {
     Imm(i) => i.to_string()
     Reg(AX) => "eax"
     Reg(R10) => "r10d"
-    Stack(i) => "dword [rbp \{i}]" // TODO 如何判断是否是dword
+    Stack(i, DWord) => "dword [rbp \{i}]" // TODO 如何判断是否是dword
     _ => @utils.die("unsupport operand")
   }
 }
@@ -33,8 +34,8 @@ fn emit_instruction(inst : @asm.Instruction) -> String {
   let inst_str = match inst {
     Mov(dst~, src~) => "mov \{show_operand (dst)} , \{show_operand(src)}"
     Ret =>
-      #|  mov  rsp,rbp
-      #|  pop  rbp
+      #|mov rsp,rbp
+      #|  pop rbp
       #|  ret
     Unary(op, operand) => "\{show_unop(op)} \{show_operand(operand)}"
     AllocateStack(i) => "sub rsp,\{i}"
@@ -45,11 +46,13 @@ fn emit_instruction(inst : @asm.Instruction) -> String {
 ///|
 fn emit_toplevel(func : @asm.Function) -> String {
   let label = func.name
-  let instructions = func.instructions.map(emit_instruction)
+  let instructions = func.instructions.map(fn(instr) {
+    "  " + emit_instruction(instr)
+  })
   $|\{label}:
-  #|  push  rbp
-  #|  mov   rbp, rsp
-  $|  \{@string.concat(instructions)}
+  #|  push rbp
+  #|  mov  rbp, rsp
+  $|\{@string.concat(instructions)}
 }
 
 ///|
