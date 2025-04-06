@@ -1,7 +1,7 @@
 {
   "import": [
-    "moonc/parser",
-    "moonc/utils",
     "moonc/asm",
+    "moonc/tacky",
+    "moonc/backend"
   ]
 }

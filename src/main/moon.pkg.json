@@ -3,11 +3,12 @@
   "import": [
     "moonc/lexer",
     "moonc/parser",
-    "moonc/asm",
-    "moonc/emit",
-    "moonc/codegen",
     "moonbitlang/x/sys",
     "moonbitlang/x/fs",
-    "moonc/utils"
+    "moonc/utils",
+    "moonc/tacky",
+    "moonc/asm",
+    "moonc/emit",
+    "moonc/compiler"
   ]
 }

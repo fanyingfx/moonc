@@ -1,4 +1,5 @@
-typealias @token.(Token)
+///|
+
 ///|
 struct Lexer {
   len : Int
@@ -50,7 +51,7 @@ fn eat_while(self : Lexer, predicate : (Char?) -> Bool) -> String {
   while predicate(self.peek_char()) {
     self.advance_char()
   }
-  return self.content.substring(start=start_pos, end=self.pos+1)
+  return self.content.substring(start=start_pos, end=self.pos + 1)
 }
 
 ///|
@@ -77,10 +78,7 @@ fn make_int(self : Lexer) -> Token {
   let v = try {
     @strconv.parse_int!(value_str)
   } catch {
-    StrConvError(_) => {
-      println("Parser Int Error, pos\{self.pos}")
-      abort("Error ")
-    }
+    StrConvError(_) => @utils.die("Parser Int Error, pos\{self.pos}")
   }
   Constant(v)
 }
@@ -116,6 +114,7 @@ fn next_token(self : Lexer) -> Token {
         ';' => Semicolon
         '~' => Tilde
         '+' => Plus
+        '-' => Hyphen
         '*' => Star
         '/' => Slash
         '%' => Percent
@@ -133,7 +132,7 @@ fn next_token(self : Lexer) -> Token {
 ///|
 pub fn lex(content : String) -> @queue.T[Token] {
   let lexer = Lexer::new(content)
-  let tokens  = @queue.new()
+  let tokens = @queue.new()
   while true {
     match lexer.next_token() {
       EOF => break
