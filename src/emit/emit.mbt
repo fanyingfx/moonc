@@ -5,8 +5,8 @@ let asm_start =
   #|entry _start
   #|_start:
   #|  call main
-  #|  mov rdi,rax
-  #|  mov rax,60
+  #|  mov  rdi,rax
+  #|  mov  rax,60
   #|  syscall
   #|
 
@@ -19,12 +19,19 @@ fn show_unop(unop : @asm.UnaryOp) -> String {
 }
 
 ///|
+fn show_operand_size(sz : @asm.OperandSize) -> String {
+  match sz {
+    DWord => "dword"
+  }
+}
+
+///|
 fn show_operand(operand : @asm.Operand) -> String {
   match operand {
     Imm(i) => i.to_string()
     Reg(AX) => "eax"
     Reg(R10) => "r10d"
-    Stack(i, DWord) => "dword [rbp \{i}]" // TODO 如何判断是否是dword
+    Stack(i, sz) => "\{show_operand_size(sz)} [rbp \{i}]"
     _ => @utils.die("unsupport operand")
   }
 }
@@ -32,13 +39,13 @@ fn show_operand(operand : @asm.Operand) -> String {
 ///|
 fn emit_instruction(inst : @asm.Instruction) -> String {
   let inst_str = match inst {
-    Mov(dst~, src~) => "mov \{show_operand (dst)} , \{show_operand(src)}"
+    Mov(dst~, src~) => "mov  \{show_operand (dst)} , \{show_operand(src)}"
     Ret =>
-      #|mov rsp,rbp
-      #|  pop rbp
+      #|mov  rsp,rbp
+      #|  pop  rbp
       #|  ret
-    Unary(op, operand) => "\{show_unop(op)} \{show_operand(operand)}"
-    AllocateStack(i) => "sub rsp,\{i}"
+    Unary(op, operand) => "\{show_unop(op)}  \{show_operand(operand)}"
+    AllocateStack(i) => "sub  rsp,\{i}"
   }
   return inst_str + "\n"
 }

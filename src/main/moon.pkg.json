@@ -7,7 +7,6 @@
     "moonbitlang/x/fs",
     "moonc/utils",
     "moonc/tacky",
-    "moonc/backend",
     "moonc/asm",
     "moonc/emit",
     "moonc/compiler"
