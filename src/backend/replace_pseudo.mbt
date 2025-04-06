@@ -40,7 +40,16 @@ fn replace_pseudos_in_instruction(
       let new_dst = self.replace_operand(dst)
       Unary(op, new_dst)
     }
-    Ret => Ret
+    Binary(op, dst~, src~) => {
+      let new_dst = self.replace_operand(dst)
+      let new_src = self.replace_operand(src)
+      Binary(op, dst=new_dst, src=new_src)
+    }
+    Idiv(operand) => {
+      let new_operand = self.replace_operand(operand)
+      Idiv(new_operand)
+    }
+    Ret | Cdq as instr => instr
     AllocateStack(_) =>
       @utils.die("AllocateStack shouldn't be present at this point")
   }

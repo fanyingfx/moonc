@@ -10,12 +10,33 @@ fn convert_unop(unop : @parser.UnaryOp) -> UnaryOp {
 }
 
 ///|
+fn convert_binop(binop : @parser.BinaryOp) -> BinaryOp {
+  match binop {
+    Add => Add
+    Sub => Sub
+    Mul => Mul
+    Div => Div
+    Rem => Rem
+  }
+}
+
+///|
 
 ///|
 fn emit_expr(expr : Expr) -> (Array[Instruction], Val) {
   match expr {
     Expr::Constant(c) => ([], Constant(c))
     Expr::Unary(op, inner) => emit_unary(op, inner)
+    Expr::Binary(op, e1, e2) => {
+      let (instrs1, v1) = emit_expr(e1)
+      let (instrs2, v2) = emit_expr(e2)
+      instrs1.append(instrs2)
+      let dst_name = @utils.make_temporary()
+      let dst = Var(dst_name)
+      let tacky_op = convert_binop(op)
+      instrs1.push(Binary(tacky_op, dst~, src1=v1, src2=v2))
+      (instrs1, dst)
+    }
     Expr::Var(_) => panic()
   }
 }

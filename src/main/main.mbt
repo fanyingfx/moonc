@@ -16,7 +16,7 @@ fn get_cfile() -> CFile {
 
 ///|
 fn asm_file(self : CFile) -> String {
-  self._.trim_end(".c") + ".asm"
+  self._.trim_end("c") + "asm"
 }
 
 ///|
