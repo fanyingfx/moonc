@@ -19,6 +19,15 @@ fn show_unop(unop : @asm.UnaryOp) -> String {
 }
 
 ///|
+fn show_binop(binop : @asm.BinaryOp) -> String {
+  match binop {
+    Sub => "sub"
+    Add => "add"
+    Mul => "imul"
+  }
+}
+
+///|
 fn show_operand_size(sz : @asm.OperandSize) -> String {
   match sz {
     DWord => "dword"
@@ -30,7 +39,9 @@ fn show_operand(operand : @asm.Operand) -> String {
   match operand {
     Imm(i) => i.to_string()
     Reg(AX) => "eax"
+    Reg(DX) => "edx"
     Reg(R10) => "r10d"
+    Reg(R11) => "r11d"
     Stack(i, sz) => "\{show_operand_size(sz)} [rbp \{i}]"
     _ => @utils.die("unsupport operand")
   }
@@ -46,6 +57,10 @@ fn emit_instruction(inst : @asm.Instruction) -> String {
       #|  ret
     Unary(op, operand) => "\{show_unop(op)}  \{show_operand(operand)}"
     AllocateStack(i) => "sub  rsp,\{i}"
+    Idiv(operand) => "idiv \{show_operand(operand)}"
+    Binary(binop, dst~, src~) =>
+      "\{show_binop(binop)} \{show_operand(dst)}, \{show_operand(src)}"
+    Cdq => "cdq"
   }
   return inst_str + "\n"
 }

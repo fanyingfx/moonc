@@ -43,5 +43,13 @@ pub(all) enum Token {
   Comma
   EOF
   Invalid
+} derive(Show, Eq)
+
+///|
+pub fn precdence(self : Token) -> Int {
+  match self {
+    Plus | Hyphen => 45
+    Star | Slash | Percent => 50
+    tok => @utils.die("\{tok} is not a Binary")
+  }
 }
-derive (Show,Eq)

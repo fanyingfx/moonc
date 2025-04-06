@@ -8,6 +8,16 @@ fn convert_unop(op : @tacky.UnaryOp) -> @asm.UnaryOp {
 }
 
 ///|
+fn convert_binop(op : @tacky.BinaryOp) -> @asm.BinaryOp {
+  match op {
+    Mul => Mul
+    Sub => Sub
+    Add => Add
+    _ => @utils.die("Div/Rem should be converted")
+  }
+}
+
+///|
 fn convert_val(val : @tacky.Val) -> @asm.Operand {
   match val {
     Constant(i) => Imm(i)
@@ -23,6 +33,19 @@ fn convert_instruction(instr : @tacky.Instruction) -> Array[@asm.Instruction] {
       let dst = convert_val(dst)
       let src = convert_val(src)
       [Mov(dst~, src~), Unary(convert_unop(op), dst)]
+    }
+    Binary(op, dst~, src1~, src2~) => {
+      let src1 = convert_val(src1)
+      let src2 = convert_val(src2)
+      let dst = convert_val(dst)
+      match op {
+        Add | Sub | Mul =>
+          [Mov(dst~, src=src1), Binary(convert_binop(op), dst~, src=src2)]
+        Div =>
+          [Mov(dst=Reg(AX), src=src1), Cdq, Idiv(src2), Mov(dst~, src=Reg(AX))]
+        Rem =>
+          [Mov(dst=Reg(AX), src=src1), Cdq, Idiv(src2), Mov(dst~, src=Reg(DX))]
+      }
     }
   }
 }
