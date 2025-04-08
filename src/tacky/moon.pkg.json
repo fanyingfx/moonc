@@ -1,6 +1,6 @@
 {
   "import": [
     "moonc/parser",
-    "moonc/utils"
+    "moonc/utils",
   ]
 }

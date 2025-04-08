@@ -13,9 +13,14 @@ pub(all) struct Function {
 pub(all) enum Instruction {
   Mov(dst~ : Operand, src~ : Operand)
   Unary(UnaryOp, Operand)
-  Binary(BinaryOp, dst~:Operand, src~:Operand)
+  Binary(BinaryOp, dst~ : Operand, src~ : Operand)
+  Cmp(Operand, Operand)
   Idiv(Operand)
   Cdq
+  Jmp(String)
+  JmpCC(CondCode, String)
+  SetCC(CondCode, Operand)
+  Label(String)
   AllocateStack(Int)
   Ret
 } derive(Show)
@@ -38,13 +43,9 @@ pub(all) enum Operand {
   Imm(Int)
   Reg(Register)
   Pseudo(String)
-  Stack(Int, OperandSize)
+  Stack(Int)
 } derive(Show)
 
-///|
-pub(all) enum OperandSize {
-  DWord
-} derive(Show)
 
 ///|
 pub(all) enum Register {
@@ -53,3 +54,13 @@ pub(all) enum Register {
   R10
   R11
 } derive(Show)
+
+///|
+pub(all) enum CondCode {
+  E
+  NE
+  G
+  GE
+  L
+  LE
+}derive(Show)

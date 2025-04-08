@@ -39,11 +39,10 @@ fn parse_statement(self : TokenStream) -> Stmt {
 }
 
 ///|
-fn parse_exp(self : TokenStream, min_prec : Int) -> Expr {
+pub fn parse_exp(self : TokenStream, min_prec : Int) -> Expr {
   let mut left = self.parse_factor()
   let mut next_token = self.peek()
-  while next_token is (Plus | Hyphen | Star | Slash | Percent) &&
-        next_token.precdence() >= min_prec {
+  while is_binop(next_token) && next_token.precdence() >= min_prec {
     let op = self.parse_binop()
     let right = self.parse_exp(next_token.precdence() + 1)
     left = Binary(op, left, right)
@@ -107,6 +106,14 @@ fn parse_binop(self : TokenStream) -> BinaryOp {
     Star => Mul
     Slash => Div
     Percent => Rem
+    LogicAnd => And
+    LogicOr => Or
+    DoubleEqual => Equal
+    BangEqual => NotEqual
+    LessThan => LessThan
+    GreaterThan => GreaterThan
+    LessOrEqual => LessOrEqual
+    GreaterOrEqual => GreaterOrEqual
     errorToken => @utils.die("Wrong BinaryOp: \{errorToken}")
   }
 }
@@ -118,4 +125,120 @@ fn expect(self : TokenStream, expected : Token) -> Unit {
     println("expected:\{expected}, acutal:\{actual}")
     @utils.die("Syntax error")
   }
+}
+
+///|
+fn is_binop(token : Token) -> Bool {
+  token
+  is (Plus
+  | Hyphen
+  | Star
+  | Slash
+  | Percent
+  | LogicAnd
+  | LogicOr
+  | DoubleEqual
+  | BangEqual
+  | LessThan
+  | GreaterThan
+  | LessOrEqual
+  | GreaterOrEqual)
+}
+
+///| convert String to expr, only used in test
+pub fn expr(expr_str : String) -> Expr {
+  let tokens : TokenStream = @lexer.lex(expr_str)
+  parse_exp(tokens, 0)
+}
+
+
+
+///|
+test "test parse binary" {
+  inspect!(expr("2>3"), content="Binary(GreaterThan, Constant(2), Constant(3))")
+  inspect!(
+    expr("2>=3"),
+    content="Binary(GreaterOrEqual, Constant(2), Constant(3))",
+  )
+  inspect!(expr("2<3"), content="Binary(LessThan, Constant(2), Constant(3))")
+  inspect!(
+    expr("2<=3"),
+    content="Binary(LessOrEqual, Constant(2), Constant(3))",
+  )
+  inspect!(expr("2==3"), content="Binary(Equal, Constant(2), Constant(3))")
+  inspect!(expr("2!=3"), content="Binary(NotEqual, Constant(2), Constant(3))")
+  inspect!(expr("2&&3"), content="Binary(And, Constant(2), Constant(3))")
+  inspect!(expr("2||3"), content="Binary(Or, Constant(2), Constant(3))")
+}
+
+///|
+test "arithmetic precdence" {
+  inspect!(
+    expr("2+3+4"),
+    content="Binary(Add, Binary(Add, Constant(2), Constant(3)), Constant(4))",
+  )
+  inspect!(
+    expr("2+3*4"),
+    content="Binary(Add, Constant(2), Binary(Mul, Constant(3), Constant(4)))",
+  )
+  inspect!(
+    expr("2*3+4"),
+    content="Binary(Add, Binary(Mul, Constant(2), Constant(3)), Constant(4))",
+  )
+  inspect!(
+    expr("(2+3)*4"),
+    content="Binary(Mul, Binary(Add, Constant(2), Constant(3)), Constant(4))",
+  )
+  inspect!(
+    expr("2+3-4"),
+    content="Binary(Sub, Binary(Add, Constant(2), Constant(3)), Constant(4))",
+  )
+  inspect!(
+    expr("2-3/4"),
+    content="Binary(Sub, Constant(2), Binary(Div, Constant(3), Constant(4)))",
+  )
+  inspect!(
+    expr("2*3/4"),
+    content="Binary(Div, Binary(Mul, Constant(2), Constant(3)), Constant(4))",
+  )
+  inspect!(
+    expr("2/3*4"),
+    content="Binary(Mul, Binary(Div, Constant(2), Constant(3)), Constant(4))",
+  )
+}
+
+///|
+test "compare" {
+  inspect!(
+    expr("2<3<=4"),
+    content="Binary(LessOrEqual, Binary(LessThan, Constant(2), Constant(3)), Constant(4))",
+  )
+  inspect!(
+    expr("2<=3<4"),
+    content="Binary(LessThan, Binary(LessOrEqual, Constant(2), Constant(3)), Constant(4))",
+  )
+  inspect!(
+    expr("2>3>=4"),
+    content="Binary(GreaterOrEqual, Binary(GreaterThan, Constant(2), Constant(3)), Constant(4))",
+  )
+  inspect!(
+    expr("2>=3>4"),
+    content="Binary(GreaterThan, Binary(GreaterOrEqual, Constant(2), Constant(3)), Constant(4))",
+  )
+  inspect!(
+    expr("2>=3<4"),
+    content="Binary(LessThan, Binary(GreaterOrEqual, Constant(2), Constant(3)), Constant(4))",
+  )
+  inspect!(
+    expr("2<3>=4"),
+    content="Binary(GreaterOrEqual, Binary(LessThan, Constant(2), Constant(3)), Constant(4))",
+  )
+   inspect!(
+    expr("2<3==4"),
+    content="Binary(Equal, Binary(LessThan, Constant(2), Constant(3)), Constant(4))",
+  )
+   inspect!(
+    expr("2<3!=4"),
+    content="Binary(NotEqual, Binary(LessThan, Constant(2), Constant(3)), Constant(4))",
+  )
 }

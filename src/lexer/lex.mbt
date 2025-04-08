@@ -56,12 +56,9 @@ fn eat_while(self : Lexer, predicate : (Char?) -> Bool) -> String {
 
 ///|
 fn skip_whitespace(self : Lexer) -> Unit {
-  // println("current char:\{self.ch}")
   while self.ch is Some(' ' | '\n' | '\r' | '\t') {
-    // println("Space")
     self.advance_char()
   }
-  // self.advance_char()
 }
 
 ///|
@@ -85,17 +82,23 @@ fn make_int(self : Lexer) -> Token {
 
 ///|
 fn make_ident_or_keyword(self : Lexer) -> Token {
-  fn is_alphabelt(opt : Char?) -> Bool {
-    match opt {
-      Some('a'..='z' | 'A'..='Z' | '_' | '0'..='9') => true
-      _ => false
-    }
-  }
-
-  let idstr = self.eat_while(is_alphabelt)
+  let idstr = self.eat_while(fn(opt) {
+    opt is Some('a'..='z' | 'A'..='Z' | '_' | '0'..='9')
+  })
   match keywords[idstr] {
     None => Identifier(idstr)
     Some(kw) => kw
+  }
+}
+
+///|
+fn match_next_char(self : Lexer, ch : Char) -> Bool {
+  match self.peek_char() {
+    Some(c) if c == ch => {
+      self.advance_char()
+      true
+    }
+    _ => false
   }
 }
 
@@ -121,6 +124,26 @@ fn next_token(self : Lexer) -> Token {
         '?' => QuestionMark
         ':' => Colon
         ',' => Comma
+        '!' => if self.match_next_char('=') { BangEqual } else { Bang }
+        '=' => if self.match_next_char('=') { DoubleEqual } else { Equal }
+        '<' => if self.match_next_char('=') { LessOrEqual } else { LessThan }
+        '>' =>
+          if self.match_next_char('=') {
+            GreaterOrEqual
+          } else {
+            GreaterThan
+          }
+        '&' =>
+          if self.match_next_char('&') {
+            LogicAnd
+          } else {
+            @utils.die("'&' not suppoorted yet")
+          }
+        '|' => if self.match_next_char('|') {
+          LogicOr
+        } else{
+          @utils.die("'|' not supported yet")
+        }
         _ => @utils.die("Cannot get next_token")
       }
     None => EOF
@@ -141,4 +164,38 @@ pub fn lex(content : String) -> @queue.T[Token] {
   }
   tokens.push(EOF)
   return tokens
+}
+
+///|
+test "basic lexer" {
+  let source_code =
+    #|int main(void){
+    #| return 2; 
+  let tokens = lex(source_code)
+  inspect!(
+    tokens,
+    content=
+      #|@queue.of([KWInt, Identifier("main"), LParen, KWVoid, RParen, LBrace, KWReturn, Constant(2), Semicolon, EOF])
+    ,
+  )
+}
+
+///|
+test "lookahead" {
+  inspect!(lex("!"), content="@queue.of([Bang, EOF])")
+  inspect!(lex(">"), content="@queue.of([GreaterThan, EOF])")
+  inspect!(lex("<"), content="@queue.of([LessThan, EOF])")
+  inspect!(lex("="), content="@queue.of([Equal, EOF])")
+  inspect!(lex("!="), content="@queue.of([BangEqual, EOF])")
+  inspect!(lex(">="), content="@queue.of([GreaterOrEqual, EOF])")
+  inspect!(lex("=="), content="@queue.of([DoubleEqual, EOF])")
+  inspect!(lex("&&"), content="@queue.of([LogicAnd, EOF])")  
+  inspect!(lex("||"), content="@queue.of([LogicOr, EOF])")
+
+}
+
+///|
+test "panic not suppoort yet" {
+  let _ = lex("&")
+
 }

@@ -2,6 +2,9 @@
   "import": [
     "moonc/asm",
     "moonc/tacky",
-    "moonc/backend"
+    "moonc/backend",
+    "moonc/lexer",
+    "moonc/parser",
+
   ]
 }

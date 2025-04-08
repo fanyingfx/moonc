@@ -23,13 +23,11 @@ fn asm_file(self : CFile) -> String {
 fn main {
   let cfile = get_cfile()
   let content = @fs.read_file_to_string?(cfile._).unwrap()
-  let tokens = @lexer.lex(content)
-  let ast = @parser.parse(tokens)
-  // let asm_ast = @codegen.gen_asm(ast)
-  let tacky = @tacky.gen_tacky(ast)
-  let asm = @compiler.gen_asm(tacky)
+  let asm = content
+    |> @lexer.lex
+    |> @parser.parse
+    |> @tacky.gen_tacky
+    |> @compiler.gen_asm
   let _ = @emit.emit(cfile.asm_file(), asm)
-
-  // let fixup = @backend.fixup_program(tacky)
 
 }

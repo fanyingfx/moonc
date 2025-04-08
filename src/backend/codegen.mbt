@@ -4,6 +4,7 @@ fn convert_unop(op : @tacky.UnaryOp) -> @asm.UnaryOp {
   match op {
     Complement => Not
     Negate => Neg
+    Not => @utils.die("Can't convert tacky Not to asm")
   }
 }
 
@@ -26,13 +27,28 @@ fn convert_val(val : @tacky.Val) -> @asm.Operand {
 }
 
 ///|
+let to_cond_code : (@tacky.BinaryOp) -> @asm.CondCode = fn {
+  Equal => E
+  NotEqual => NE
+  GreaterThan => G
+  GreaterOrEqual => GE
+  LessThan => L
+  LessOrEqual => LE
+  op => @utils.die("\{op} can't convert to cond code")
+}
+
+///|
 fn convert_instruction(instr : @tacky.Instruction) -> Array[@asm.Instruction] {
   match instr {
     Return(val) => [Mov(dst=Reg(AX), src=convert_val(val)), Ret]
     Unary(op, dst~, src~) => {
       let dst = convert_val(dst)
       let src = convert_val(src)
-      [Mov(dst~, src~), Unary(convert_unop(op), dst)]
+      if op is Not {
+        [Cmp(src, Imm(0)), Mov(dst~, src=Imm(0)), SetCC(E, dst)]
+      } else {
+        [Mov(dst~, src~), Unary(convert_unop(op), dst)]
+      }
     }
     Binary(op, dst~, src1~, src2~) => {
       let src1 = convert_val(src1)
@@ -45,8 +61,21 @@ fn convert_instruction(instr : @tacky.Instruction) -> Array[@asm.Instruction] {
           [Mov(dst=Reg(AX), src=src1), Cdq, Idiv(src2), Mov(dst~, src=Reg(AX))]
         Rem =>
           [Mov(dst=Reg(AX), src=src1), Cdq, Idiv(src2), Mov(dst~, src=Reg(DX))]
+        Equal
+        | NotEqual
+        | GreaterThan
+        | GreaterOrEqual
+        | LessThan
+        | LessOrEqual =>
+          [Cmp(src1, src2), Mov(dst~, src=Imm(0)), SetCC(to_cond_code(op), dst)]
       }
     }
+    JumpIfZero(val, target) => [Cmp(convert_val(val), Imm(0)), JmpCC(E, target)]
+    Jump(target) => [Jmp(target)]
+    Copy(dst~, src~) => [Mov(dst=convert_val(dst), src=convert_val(src))]
+    JumpIfNotZero(val, target) =>
+      [Cmp(convert_val(val), Imm(0)), JmpCC(NE, target)]
+    Label(target) => [Label(target)]
   }
 }
 

@@ -10,15 +10,27 @@ pub(all) enum Expr {
 pub(all) enum UnaryOp {
   Complement
   Negate
+  Not
 } derive(Show)
 
 ///|
 pub(all) enum BinaryOp {
+  // arithmetic
   Add
   Sub
   Mul
   Div
   Rem
+  // Compare
+  Equal
+  NotEqual
+  LessThan
+  LessOrEqual
+  GreaterThan
+  GreaterOrEqual
+  // logic
+  And
+  Or
 } derive(Show)
 
 ///|

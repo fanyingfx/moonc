@@ -28,39 +28,62 @@ fn show_binop(binop : @asm.BinaryOp) -> String {
 }
 
 ///|
-fn show_operand_size(sz : @asm.OperandSize) -> String {
-  match sz {
-    DWord => "dword"
-  }
+// let show_operand_size : (@asm.OperandSize) -> String = fn { 
+//   DWord => "dword" 
+// }
+
+///|
+let show_operand_byte : (@asm.Operand) -> String = fn {
+  Imm(i) => i.to_string()
+  Reg(AX) => "al"
+  Reg(DX) => "dl"
+  Reg(R10) => "r10b"
+  Reg(R11) => "r11b"
+  Stack(i) => "byte [rbp \{i}]"
+  _ => @utils.die("unsupport operand")
 }
 
 ///|
-fn show_operand(operand : @asm.Operand) -> String {
-  match operand {
-    Imm(i) => i.to_string()
-    Reg(AX) => "eax"
-    Reg(DX) => "edx"
-    Reg(R10) => "r10d"
-    Reg(R11) => "r11d"
-    Stack(i, sz) => "\{show_operand_size(sz)} [rbp \{i}]"
-    _ => @utils.die("unsupport operand")
-  }
+let show_operand_dw : (@asm.Operand) -> String = fn {
+  Imm(i) => i.to_string()
+  Reg(AX) => "eax"
+  Reg(DX) => "edx"
+  Reg(R10) => "r10d"
+  Reg(R11) => "r11d"
+  Stack(i) => "dword [rbp \{i}]"
+  _ => @utils.die("unsupport operand")
+}
+
+///|
+let show_cond_code : (@asm.CondCode) -> String = fn {
+  E => "e"
+  NE => "ne"
+  L => "l"
+  LE => "le"
+  G => "g"
+  GE => "ge"
 }
 
 ///|
 fn emit_instruction(inst : @asm.Instruction) -> String {
   let inst_str = match inst {
-    Mov(dst~, src~) => "mov  \{show_operand (dst)} , \{show_operand(src)}"
+    Mov(dst~, src~) => "mov  \{show_operand_dw (dst)} , \{show_operand_dw(src)}"
     Ret =>
       #|mov  rsp,rbp
       #|  pop  rbp
       #|  ret
-    Unary(op, operand) => "\{show_unop(op)}  \{show_operand(operand)}"
+    Unary(op, operand) => "\{show_unop(op)}  \{show_operand_dw(operand)}"
     AllocateStack(i) => "sub  rsp,\{i}"
-    Idiv(operand) => "idiv \{show_operand(operand)}"
+    Idiv(operand) => "idiv \{show_operand_dw(operand)}"
     Binary(binop, dst~, src~) =>
-      "\{show_binop(binop)} \{show_operand(dst)}, \{show_operand(src)}"
+      "\{show_binop(binop)} \{show_operand_dw(dst)}, \{show_operand_dw(src)}"
     Cdq => "cdq"
+    Jmp(label) => "jmp  .L\{label}"
+    Cmp(arg1, arg2) => "cmp  \{show_operand_dw(arg1)}, \{show_operand_dw(arg2)}"
+    JmpCC(cond_code, label) => "j\{show_cond_code(cond_code)} .L\{label}"
+    SetCC(cond_code, operand) =>
+      "set\{show_cond_code(cond_code)} \{show_operand_byte(operand)}"
+    Label(label) => ".L\{label}:"
   }
   return inst_str + "\n"
 }
