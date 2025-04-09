@@ -3,7 +3,7 @@
 typealias @asm.Operand
 
 ///|
-struct State {
+priv struct State {
   mut current_offset : Int
   offset_map : Map[String, Int]
 }

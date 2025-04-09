@@ -1,7 +1,7 @@
 ///|
 
 ///|
-struct Lexer {
+priv struct Lexer {
   len : Int
   content : String
   mut pos : Int
@@ -139,11 +139,12 @@ fn next_token(self : Lexer) -> Token {
           } else {
             @utils.die("'&' not suppoorted yet")
           }
-        '|' => if self.match_next_char('|') {
-          LogicOr
-        } else{
-          @utils.die("'|' not supported yet")
-        }
+        '|' =>
+          if self.match_next_char('|') {
+            LogicOr
+          } else {
+            @utils.die("'|' not supported yet")
+          }
         _ => @utils.die("Cannot get next_token")
       }
     None => EOF
@@ -189,8 +190,18 @@ test "lookahead" {
   inspect!(lex("!="), content="@queue.of([BangEqual, EOF])")
   inspect!(lex(">="), content="@queue.of([GreaterOrEqual, EOF])")
   inspect!(lex("=="), content="@queue.of([DoubleEqual, EOF])")
-  inspect!(lex("&&"), content="@queue.of([LogicAnd, EOF])")  
+  inspect!(lex("&&"), content="@queue.of([LogicAnd, EOF])")
   inspect!(lex("||"), content="@queue.of([LogicOr, EOF])")
+}
+
+///|
+test "simple main function"{
+  let content =
+    #|int main(void){
+    #|  return 2<3 && 5>4;
+    #|}
+  inspect!(lex(content), content=#|@queue.of([KWInt, Identifier("main"), LParen, KWVoid, RParen, LBrace, KWReturn, Constant(2), LessThan, Constant(3), LogicAnd, Constant(5), GreaterThan, Constant(4), Semicolon, RBrace, EOF])
+  )
 
 }
 

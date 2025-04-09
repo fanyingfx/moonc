@@ -1,0 +1,7 @@
+{
+  "import": [
+    "moonc/lexer",
+    "moonc/utils",
+    "moonc/parser"
+  ]
+}

@@ -48,12 +48,13 @@ pub(all) enum Token {
 ///|
 pub fn precdence(self : Token) -> Int {
   match self {
+    Equal => 1
     LogicOr => 5
     LogicAnd => 10
     DoubleEqual | BangEqual => 30
     LessThan | GreaterThan | LessOrEqual | GreaterOrEqual => 35
     Plus | Hyphen => 45
     Star | Slash | Percent => 50
-    tok => @utils.die("\{tok} is not a Binary")
+    tok => @utils.die("\{tok} is not a Binary operator")
   }
 }

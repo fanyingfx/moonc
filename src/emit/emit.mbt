@@ -33,25 +33,30 @@ fn show_binop(binop : @asm.BinaryOp) -> String {
 // }
 
 ///|
-let show_operand_byte : (@asm.Operand) -> String = fn {
-  Imm(i) => i.to_string()
-  Reg(AX) => "al"
-  Reg(DX) => "dl"
-  Reg(R10) => "r10b"
-  Reg(R11) => "r11b"
-  Stack(i) => "byte [rbp \{i}]"
-  _ => @utils.die("unsupport operand")
+fn show_operand_byte(operand : @asm.Operand) -> String {
+  match operand {
+    Imm(i) => i.to_string()
+    Reg(AX) => "al"
+    Reg(DX) => "dl"
+    Reg(R10) => "r10b"
+    Reg(R11) => "r11b"
+    Stack(i) => "byte [rbp \{i}]"
+    _ => @utils.die("unsupport operand")
+  }
 }
 
 ///|
-let show_operand_dw : (@asm.Operand) -> String = fn {
-  Imm(i) => i.to_string()
-  Reg(AX) => "eax"
-  Reg(DX) => "edx"
-  Reg(R10) => "r10d"
-  Reg(R11) => "r11d"
-  Stack(i) => "dword [rbp \{i}]"
-  _ => @utils.die("unsupport operand")
+fn show_operand_dw(operand : @asm.Operand) -> String {
+  match operand {
+    Imm(i) => i.to_string()
+    Reg(AX) => "eax"
+    Reg(DX) => "edx"
+    Reg(R10) => "r10d"
+    Reg(R11) => "r11d"
+    Stack(i) => "dword [rbp \{i}]"
+    _ => @utils.die("unsupport operand")
+  }
+  
 }
 
 ///|
