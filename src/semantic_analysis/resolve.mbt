@@ -9,6 +9,7 @@ priv type VariableMap Map[String, String]
 pub fn validate(prog : @parser.Program) -> @parser.Program {
   { func: resolve_func(prog.func) }
 }
+
 ///|O
 /// 
 fn resolve_func(func : @parser.Function) -> @parser.Function {
@@ -44,7 +45,15 @@ fn resolve_stmt(self : VariableMap, stmt : Stmt) -> Stmt {
     Null => Null
     Expression(e) => Expression(self.resolve_expr(e))
     Return(e) => Return(self.resolve_expr(e))
-    If(_) => @utils.die("If is not supported yet")
+    If(cond~, then_stmt~, else_stmt~) => {
+      let cond = self.resolve_expr(cond)
+      let then_stmt = self.resolve_stmt(then_stmt)
+      let else_stmt = match else_stmt {
+        Some(stmt) => Some(self.resolve_stmt(stmt))
+        None => None
+      }
+      If(cond~, then_stmt~, else_stmt~)
+    }
   }
 }
 
@@ -66,25 +75,31 @@ fn resolve_expr(self : VariableMap, expr : Expr) -> Expr {
       Binary(op, self.resolve_expr(left), self.resolve_expr(right))
     Unary(op, expr) => Unary(op, self.resolve_expr(expr))
     Constant(i) => Constant(i)
+    Conditional(cond~, then_expr~, else_expr~) => {
+      let cond = self.resolve_expr(cond)
+      let then_expr = self.resolve_expr(then_expr)
+      let else_expr = self.resolve_expr(else_expr)
+      Conditional(cond~, then_expr~, else_expr~)
+    }
   }
 }
-test  "validate basic"{
+
+///|
+test "validate basic" {
   @utils.reset_counter()
-  let code = 
-  #|int main (void){
-  #|  int a = 1;
-  #|  int b = a+1;
-  #|  return a+b;
-  #|}
+  let code =
+    #|int main (void){
+    #|  int a = 1;
+    #|  int b = a+1;
+    #|  return a+b;
+    #|}
   let tokens = @lexer.lex(code)
   let program_ast = @parser.parse(tokens)
-  let validated_ast=validate(program_ast)
-  inspect!(validated_ast, content=
-    #|{func: {name: "main", body: [D({name: "a", init: Some(Constant(1))}), D({name: "b", init: Some(Binary(Add, Var("tmp.0"), Constant(1)))}), S(Return(Binary(Add, Var("tmp.0"), Var("tmp.1"))))]}}
+  let validated_ast = validate(program_ast)
+  inspect!(
+    validated_ast,
+    content=
+      #|{func: {name: "main", body: [D({name: "a", init: Some(Constant(1))}), D({name: "b", init: Some(Binary(Add, Var("tmp.0"), Constant(1)))}), S(Return(Binary(Add, Var("tmp.0"), Var("tmp.1"))))]}}
+    ,
   )
-
-   
-
-
 }
-

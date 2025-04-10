@@ -7,6 +7,7 @@ pub fn gen_asm(prog : @tacky.Program) -> @asm.Program {
   asm_ast
 }
 test "basic gen_asm"{
+  @utils.reset_counter()
   let content =
   #|int main(void){
   #|  return 2<3 && 5>4;
@@ -15,11 +16,12 @@ test "basic gen_asm"{
     |> @lexer.lex
     |> @parser.parse
     |> @semantic_analysis.validate
-    |> @tacky.gen_tacky
+    |> @tacky.gen_tacky_program
     |> gen_asm
 
   inspect!(asm, content=
-    #|{func: {name: "main", instructions: [AllocateStack(12), Mov(dst=Reg(R11), src=Imm(2)), Cmp(Reg(R11), Imm(3)), Mov(dst=Stack(-4), src=Imm(0)), SetCC(L, Stack(-4)), Cmp(Stack(-4), Imm(0)), JmpCC(E, "false_0"), Mov(dst=Reg(R11), src=Imm(5)), Cmp(Reg(R11), Imm(4)), Mov(dst=Stack(-8), src=Imm(0)), SetCC(G, Stack(-8)), Cmp(Stack(-8), Imm(0)), JmpCC(E, "false_0"), Mov(dst=Stack(-12), src=Imm(1)), Jmp("end_1"), Label("false_0"), Mov(dst=Stack(-12), src=Imm(0)), Label("end_1"), Mov(dst=Reg(AX), src=Stack(-12)), Ret]}}
+    #|{func: {name: "main", instructions: [AllocateStack(12), Mov(dst=Reg(R11), src=Imm(2)), Cmp(Reg(R11), Imm(3)), Mov(dst=Stack(-4), src=Imm(0)), SetCC(L, Stack(-4)), Cmp(Stack(-4), Imm(0)), JmpCC(E, "false_2"), Mov(dst=Reg(R11), src=Imm(5)), Cmp(Reg(R11), Imm(4)), Mov(dst=Stack(-8), src=Imm(0)), SetCC(G, Stack(-8)), Cmp(Stack(-8), Imm(0)), JmpCC(E, "false_2"), Mov(dst=Stack(-12), src=Imm(1)), Jmp("end_3"), Label("false_2"), Mov(dst=Stack(-12), src=Imm(0)), Label("end_3"), Mov(dst=Reg(AX), src=Stack(-12)), Ret, Mov(dst=Reg(AX), src=Imm(0)), Ret]}}
+
 
   )
 }

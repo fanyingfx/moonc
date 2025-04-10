@@ -2,7 +2,7 @@
 typealias @parser.(Expr, Stmt)
 
 ///|
-pub fn gen_tacky(prog : @parser.Program) -> Program {
+pub fn gen_tacky_program(prog : @parser.Program) -> Program {
   { func: emit_func_decl(prog.func) }
 }
 
@@ -28,16 +28,14 @@ fn emit_block(block : @parser.BlockItem) -> Array[Instruction] {
 
 ///|
 fn emit_decl(decl : @parser.Decl) -> Array[Instruction] {
-  match decl.init{
+  match decl.init {
     None => []
     Some(expr) => {
-      let (instructions,result)=emit_expr(expr)
-      instructions.push(Copy(dst=Var(decl.name),src=result))
+      let (instructions, result) = emit_expr(expr)
+      instructions.push(Copy(dst=Var(decl.name), src=result))
       instructions
     }
-
   }
-
 }
 
 ///|
@@ -48,12 +46,40 @@ fn emit_stmt(stmt : Stmt) -> Array[Instruction] {
       instrs.push(Return(v))
       instrs
     }
-    If(_) => panic()
     Expression(expr) => {
       let (instrs, _) = emit_expr(expr)
       instrs
     }
     Null => []
+    If(cond~, then_stmt~, else_stmt=None) => {
+      let (instrs, cond_val) = emit_expr(cond)
+      let then_instrs = emit_stmt(then_stmt)
+      let cond_name = @utils.make_temporary()
+      let cond_var = Var(cond_name)
+      let end_label = @utils.make_label("end")
+      instrs
+      ..push(Copy(dst=cond_var, src=cond_val))
+      ..push(JumpIfZero(cond_var, end_label))
+      ..append(then_instrs)
+      ..push(Label(end_label))
+    }
+    If(cond~, then_stmt~, else_stmt=Some(else_stmt)) => {
+      let (instrs, cond_val) = emit_expr(cond)
+      let then_instrs = emit_stmt(then_stmt)
+      let else_instrs = emit_stmt(else_stmt)
+      let cond_name = @utils.make_temporary()
+      let cond_var = Var(cond_name)
+      let else_label = @utils.make_label("else")
+      let end_label = @utils.make_label("end")
+      instrs
+      ..push(Copy(dst=cond_var, src=cond_val))
+      ..push(JumpIfZero(cond_var, else_label))
+      ..append(then_instrs)
+      ..push(Jump(end_label))
+      ..push(Label(else_label))
+      ..append(else_instrs)
+      ..push(Label(end_label))
+    }
   }
 }
 
@@ -72,11 +98,30 @@ fn emit_expr(expr : Expr) -> (Array[Instruction], Val) {
       (instructions, Var(v))
     }
     Assignment(_) => @utils.die("Only Var can be assigned")
+    Conditional(cond~, then_expr~, else_expr~) => {
+      let (instrs, cond_val) = emit_expr(cond)
+      let (then_instrs,then_val) = emit_expr(then_expr)
+      let (else_instrs,else_val) = emit_expr(else_expr)
+      let cond_name = @utils.make_temporary()
+      let cond_var = Var(cond_name)
+      let else_label = @utils.make_label("else")
+      let end_label = @utils.make_label("end")
+      let result= @utils.make_temporary()
+      let result = Var(result)
+      let _= instrs
+      ..push(Copy(dst=cond_var, src=cond_val))
+      ..push(JumpIfZero(cond_var, else_label))
+      ..append(then_instrs)
+      ..push(Copy(dst=result,src=then_val))
+      ..push(Jump(end_label))
+      ..push(Label(else_label))
+      ..append(else_instrs)
+      ..push(Copy(dst=result,src=else_val))
+      ..push(Label(end_label))
+      (instrs,result)
+    }
   }
 }
-///|
-
-///|
 
 ///|
 fn emit_binary(
@@ -194,12 +239,14 @@ fn expr(expr_str : String) -> Array[Instruction] {
   instrs.push(Return(v))
   instrs
 }
-fn func(func_str:String)->Program{
+
+///|
+fn func(func_str : String) -> Program {
   @utils.reset_counter()
   let tokens = @lexer.lex(func_str)
   let ast = @parser.parse(tokens)
   let validated_ast = @semantic_analysis.validate(ast)
-  let tacky = gen_tacky(validated_ast)
+  let tacky = gen_tacky_program(validated_ast)
   tacky
 }
 
@@ -215,23 +262,23 @@ test {
     expr("2<3 && 5>10"),
     content=
       #|[Binary(LessThan, dst=Var("tmp.0"), src1=Constant(2), src2=Constant(3)), JumpIfZero(Var("tmp.0"), "false_2"), Binary(GreaterThan, dst=Var("tmp.1"), src1=Constant(5), src2=Constant(10)), JumpIfZero(Var("tmp.1"), "false_2"), Copy(dst=Var("tmp.4"), src=Constant(1)), Jump("end_3"), Label("false_2"), Copy(dst=Var("tmp.4"), src=Constant(0)), Label("end_3"), Return(Var("tmp.4"))]
-
     ,
   )
 }
-test "basic function"{
-  let code = 
-  #|int main(void){
-  #|  int b;
-  #|  int a = 10 + 1 ;
-  #|  b = a *2;
-  #|  return b;
-  #|}
-  
-  inspect!(func(code), content=
-    #|{func: {name: "main", instructions: [Binary(Add, dst=Var("tmp.2"), src1=Constant(10), src2=Constant(1)), Copy(dst=Var("a"), src=Var("tmp.2")), Binary(Mul, dst=Var("tmp.3"), src1=Var("tmp.1"), src2=Constant(2)), Copy(dst=Var("tmp.0"), src=Var("tmp.3")), Return(Var("tmp.0")), Return(Constant(0))]}}
 
-
+///|
+test "basic function" {
+  let code =
+    #|int main(void){
+    #|  int b;
+    #|  int a = 10 + 1 ;
+    #|  b = a *2;
+    #|  return b;
+    #|}
+  inspect!(
+    func(code),
+    content=
+      #|{func: {name: "main", instructions: [Binary(Add, dst=Var("tmp.2"), src1=Constant(10), src2=Constant(1)), Copy(dst=Var("a"), src=Var("tmp.2")), Binary(Mul, dst=Var("tmp.3"), src1=Var("tmp.1"), src2=Constant(2)), Copy(dst=Var("tmp.0"), src=Var("tmp.3")), Return(Var("tmp.0")), Return(Constant(0))]}}
+    ,
   )
-  
 }

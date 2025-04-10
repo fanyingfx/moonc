@@ -31,35 +31,6 @@ fn parse_function_def(self : TokenStream) -> Function {
 
 ///|
 fn parse_block_item(self : TokenStream) -> BlockItem {
-  fn parse_decl(token_stream : TokenStream) -> Decl {
-    let _ = token_stream.take() // remove KWInt
-    let name = token_stream.parse_ident()
-    let mut init = None
-    if token_stream.peek() == Equal {
-      let _ = token_stream.take()
-      init = Some(token_stream.parse_expr(0))
-    }
-    token_stream.expect(Semicolon)
-    { name, init }
-  }
-
-  fn parse_statement(token_stream : TokenStream) -> Stmt {
-    match token_stream.peek() {
-      KWReturn => {
-        let _ = token_stream.take()
-        let return_val = token_stream.parse_expr(0)
-        token_stream.expect(Semicolon)
-        return Return(return_val)
-      }
-      _=>{
-        let expr = token_stream.parse_expr(0)
-        token_stream.expect(Semicolon)
-        Expression(expr)
-      }
-      // tok => @utils.die("Error Token: \{tok}")
-    }
-  }
-
   match self.peek() {
     KWInt => D(parse_decl(self))
     _ => S(parse_statement(self))
@@ -67,21 +38,75 @@ fn parse_block_item(self : TokenStream) -> BlockItem {
 }
 
 ///|
+fn parse_statement(self : TokenStream) -> Stmt {
+  match self.peek() {
+    KWReturn => {
+      let _ = self.take()
+      let return_val = self.parse_expr(0)
+      self.expect(Semicolon)
+      Return(return_val)
+    }
+    KWIf => {
+      let _ = self.take()
+      self.expect(LParen)
+      let cond = self.parse_expr(0)
+      self.expect(RParen)
+      let thenStmt = self.parse_statement()
+      let elseStmt = match self.peek() {
+        KWElse => {
+          let _ = self.take()
+          Some(self.parse_statement())
+        }
+        _ => None
+      }
+      If(cond~, then_stmt=thenStmt, else_stmt=elseStmt)
+    }
+    _ => {
+      let expr = self.parse_expr(0)
+      self.expect(Semicolon)
+      Expression(expr)
+    }
+  }
+}
+
+///|
+fn parse_decl(token_stream : TokenStream) -> Decl {
+  let _ = token_stream.take() // remove KWInt
+  let name = token_stream.parse_ident()
+  let mut init = None
+  if token_stream.peek() == Equal {
+    let _ = token_stream.take()
+    init = Some(token_stream.parse_expr(0))
+  }
+  token_stream.expect(Semicolon)
+  { name, init }
+}
+
+///|
 pub fn parse_expr(self : TokenStream, min_prec : Int) -> Expr {
   let mut left = self.parse_factor()
   let mut next_token = self.peek()
   while is_binop(next_token) && next_token.precdence() >= min_prec {
-    if next_token is Equal {
-      let _ = self.take()
-      let right = self.parse_expr(next_token.precdence())
-      left = Assignment(left, right)
-      next_token=self.peek()
-    } else {
-      let op = self.parse_binop()
-      let right = self.parse_expr(next_token.precdence() + 1)
-      left = Binary(op, left, right)
-      next_token = self.peek()
+    match next_token {
+      Equal => {
+        let _ = self.take()
+        let right = self.parse_expr(next_token.precdence())
+        left = Assignment(left, right)
+      }
+      QuestionMark => {
+        let _ = self.take()
+        let then_expr = self.parse_expr(0)
+        self.expect(Colon)
+        let else_expr = self.parse_expr(next_token.precdence())
+        left = Conditional(cond=left, then_expr~, else_expr~)
+      }
+      _ => {
+        let op = self.parse_binop()
+        let right = self.parse_expr(next_token.precdence() + 1)
+        left = Binary(op, left, right)
+      }
     }
+    next_token = self.peek()
   }
   left
 }
@@ -190,7 +215,8 @@ fn is_binop(token : Token) -> Bool {
   | LessThan
   | GreaterThan
   | LessOrEqual
-  | GreaterOrEqual)
+  | GreaterOrEqual
+  | QuestionMark)
 }
 
 ///| convert String to expr, only can use in test
@@ -207,7 +233,7 @@ pub fn block(stmt_str : String) -> BlockItem {
 
 ///|
 fn func(func_str : String) -> Program {
-  let tokens  = @lexer.lex(func_str)
+  let tokens = @lexer.lex(func_str)
   parse(tokens)
 }
 
@@ -302,6 +328,11 @@ test "compare" {
 }
 
 ///|
+test "Conditional" {
+  inspect!(expr("2<3?4:5"), content="Conditional(cond=Binary(LessThan, Constant(2), Constant(3)), then_expr=Constant(4), else_expr=Constant(5))")
+}
+
+///|
 test "decl" {
   inspect!(
     block("int a = 1;"),
@@ -324,6 +355,43 @@ test "decl" {
 }
 
 ///|
+test "if-else" {
+  let stmt =
+    #| if (a==3)
+    #|  return a;
+    #|else
+    #|  b=8;
+  inspect!(
+    block(stmt),
+    content=
+      #|S(If(cond=Binary(Equal, Var("a"), Constant(3)), then_stmt=Return(Var("a")), else_stmt=Some(Expression(Assignment(Var("b"), Constant(8))))))
+
+    ,
+  )
+  let stmt1 =
+    #| if (a==3)
+    #|  return a;
+  inspect!(
+    block(stmt1),
+    content=
+      #|S(If(cond=Binary(Equal, Var("a"), Constant(3)), then_stmt=Return(Var("a")), else_stmt=None))
+
+    ,
+  )
+}
+
+///|
+test "panic unsupport block" {
+  let stmt =
+    #| if (a==3){
+    #|  int b= 1;
+    #|  retun b+a;
+    #|}
+  let _ = block(stmt)
+
+}
+
+///|
 test "function" {
   let code =
     #|int main(void){
@@ -331,6 +399,10 @@ test "function" {
     #|  b = 2 *2;
     #|  return b;
     #|}
-  inspect!(func(code), content=#|{func: {name: "main", body: [D({name: "b", init: None}), S(Expression(Assignment(Var("b"), Binary(Mul, Constant(2), Constant(2))))), S(Return(Var("b")))]}}
+  inspect!(
+    func(code),
+    content=
+      #|{func: {name: "main", body: [D({name: "b", init: None}), S(Expression(Assignment(Var("b"), Binary(Mul, Constant(2), Constant(2))))), S(Return(Var("b")))]}}
+    ,
   )
 }

@@ -5,6 +5,7 @@
     "moonc/backend",
     "moonc/lexer",
     "moonc/parser",
-    "moonc/semantic_analysis"
+    "moonc/semantic_analysis",
+    "moonc/utils"
   ]
 }

@@ -26,7 +26,7 @@ fn main {
   let asm = content
     |> @lexer.lex
     |> @parser.parse
-    |> @tacky.gen_tacky
+    |> @tacky.gen_tacky_program
     |> @compiler.gen_asm
   let _ = @emit.emit(cfile.asm_file(), asm)
 

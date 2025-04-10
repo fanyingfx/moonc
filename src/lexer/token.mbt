@@ -49,6 +49,7 @@ pub(all) enum Token {
 pub fn precdence(self : Token) -> Int {
   match self {
     Equal => 1
+    QuestionMark => 3
     LogicOr => 5
     LogicAnd => 10
     DoubleEqual | BangEqual => 30
