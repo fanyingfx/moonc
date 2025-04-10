@@ -23,6 +23,7 @@ fn asm_file(self : CFile) -> String {
 fn main {
   let cfile = get_cfile()
   let content = @fs.read_file_to_string?(cfile._).unwrap()
+  // @utils.die("Panic!")
   let asm = content
     |> @lexer.lex
     |> @parser.parse
