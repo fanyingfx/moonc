@@ -71,6 +71,7 @@ fn replace_pseudos_in_function(func : @asm.Function) -> (@asm.Function, Int) {
   for instr in func.instructions {
     new_instructions.push(state.replace_pseudos_in_instruction(instr))
   }
+
   ({ name: func.name, instructions: new_instructions }, state.current_offset)
 }
 
